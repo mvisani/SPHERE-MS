@@ -27,15 +27,15 @@ def sanitizing_input(item:pd.Series):
 
 class InferenceMolDataset(TorchDataset):
     def __init__(
-        self, 
-        inputs:pd.DataFrame, # (Name,SMILES,Precursor_type,NCE,Instrument_type) 
+        self,
+        inputs:pd.DataFrame, # (Name,SMILES,Precursor_type,NCE,Instrument_type)
     ):
         super().__init__()
         self.inputs = inputs
 
     def __len__(self):
         return len(self.inputs)
-    
+
     def __getitem__(self, index):
         d_series = self.inputs.iloc[index,:]
         msmol = MSMol(Chem.MolFromSmiles(d_series['SMILES']),precursor_input=d_series['Precursor_type'])
@@ -43,7 +43,7 @@ class InferenceMolDataset(TorchDataset):
             'INSTRUMENT_TYPE':d_series['Instrument_type'],'PRECURSOR_TYPE':d_series['Precursor_type'],'NCE':d_series['NCE']
         }
         return d_series.to_dict(), msmol, covariates
-    
+
 def inference_collate_fn(inputs):
     metadata = [i[0] for i in inputs]
     msmols = [i[1] for i in inputs]
@@ -61,17 +61,17 @@ if __name__ == '__main__':
     parser.add_argument('--num_workers',default=20)
     args = parser.parse_args()
     pandarallel.initialize(progress_bar=False, verbose=0, nb_workers=args.num_workers)
-    
+
     # 1. sanitizing csv dataframe
     df = pd.read_csv(args.input_csv,index_col=False)
     df = pd.DataFrame([s for s in df.parallel_apply(sanitizing_input, axis=1) if s is not None])
 
     # 2. load model and dataset
-    msmodel = MSModel.load_from_checkpoint(checkpoint_path=args.ckpt,hparams_file=args.hyper)
+    msmodel = MSModel.load_from_checkpoint(checkpoint_path=args.ckpt,hparams_file=args.hyper, weights_only=True)
     dataset = InferenceMolDataset(df)
     dataloader = DataLoader(dataset,batch_size=args.batch_size,shuffle=False,drop_last=False,
                             num_workers=args.num_workers,collate_fn=inference_collate_fn)
-    
+
     # 3. run model
     msmodel.eval()
     with torch.no_grad():
