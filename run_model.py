@@ -1,6 +1,7 @@
 import argparse
 import logging
 import time
+from multiprocessing import Manager
 
 import pandas as pd
 import rdkit.Chem as Chem
@@ -98,6 +99,7 @@ if __name__ == "__main__":
         checkpoint_path=args.ckpt,
         hparams_file=args.hyper,
         weights_only=True,
+        map_location="cpu",
     )
     dataset = InferenceMolDataset(df)
     dataloader = DataLoader(
