@@ -101,7 +101,7 @@ def spectrum_covariates_encoding(spectrum: MSSpectrum) -> np.ndarray:
     nce = spectrum.get_nce()
     return np.array(
         [*instrument_onehot, *precursor_onehot, nce], dtype=np.float32
-    ).reshape([1, 5])
+    ).reshape([1, -1])
 
 
 class SpectrumData(Data):
@@ -418,6 +418,20 @@ class NISTDataModule(L.LightningDataModule):
             nist_file=nist_file, loss_formulas=[Formula(i) for i in LOSS_FORMULAS]
         )
 
+        all_inchikeys = set(os.listdir(self.nist_dir))
+        self.remove_absent_inchikeys(self.train_inchikeys, all_inchikeys)
+        self.remove_absent_inchikeys(self.valid_inchikeys, all_inchikeys)
+        self.remove_absent_inchikeys(self.test_inchikeys, all_inchikeys)
+
+    def remove_absent_inchikeys(
+        self,
+        inchikeys_to_clean: List[str],
+        all_inchikeys: Set[str],
+    ) -> None:
+        for i in reversed(range(len(inchikeys_to_clean))):
+            if inchikeys_to_clean[i] not in all_inchikeys:
+                del inchikeys_to_clean[i]
+
     def setup(self, stage):
         if stage == "fit":
             self.train_set = NISTDataset(
@@ -606,7 +620,7 @@ class MSMolDataBatch(Batch):
             nce = covariates_d["NCE"]
             covariates = np.array(
                 [*instrument_onehot, *precursor_onehot, nce], dtype=np.float32
-            ).reshape([1, 5])
+            ).reshape([1, -1])
 
             node_h = np.zeros(shape=(num_nodes + 1, *n.shape[1:]), dtype=np.float32)
             node_h[1:, :] = n
