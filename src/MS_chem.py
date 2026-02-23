@@ -1,11 +1,15 @@
-import rdkit.Chem as Chem
-from rdkit.Chem.rdMolDescriptors import CalcMolFormula
+import copy
+import itertools
+import re
+from collections import defaultdict, namedtuple
+from typing import *
+
 import networkx as nx
 import numpy as np
-import itertools, re, copy
-from collections import defaultdict, namedtuple
+import rdkit.Chem as Chem
+from rdkit.Chem.rdMolDescriptors import CalcMolFormula
+
 from .definition import *
-from typing import *
 
 Fragment = namedtuple(
     "Fragment", ["ion_nodes", "loss_nodes", "frag_formula", "ion_charge"]
@@ -363,20 +367,15 @@ def merge_fuse_ring(fused: list[set]):
 ###### end functions for ring detection
 
 
-def resolve_precursor(precursor_input) -> float:
+def resolve_precursor(precursor_input: str) -> int:
     # only consider precursor_input [M+H]+ [M-H]-/ [M+H+2i]+
-    precursor_match = re.match(r"\[(M[\+\-]H)\+?(\d?)i?\][\+\-]", precursor_input)
-    if precursor_match.group(1) == "M+H":
+    if precursor_input in ["[M+Na]+", "[M+H]+"]:
         free_op = 1
-    elif precursor_match.group(1) == "M-H":
+    elif precursor_input in ["[M-H]-"]:
         free_op = -1
     else:
         raise NotImplementedError
-    if precursor_match.group(2) == "":
-        neutron_count = 0
-    else:
-        neutron_count = int(precursor_match.group(2))
-    return free_op, neutron_count
+    return free_op
 
 
 class MSMol:
@@ -388,7 +387,7 @@ class MSMol:
         self.mol = mol
         self.mol_graph = mol2nx(mol)
         self.mol_formula = Formula(CalcMolFormula(mol))
-        self.free_op, _ = resolve_precursor(precursor_input)
+        self.free_op = resolve_precursor(precursor_input)
         self.precursor_formula: Formula = self.mol_formula + (
             Formula("H") * self.free_op
         )
@@ -813,6 +812,47 @@ class MSSpectrum:
         )
         property_dict["INSTRUMENT_TYPE"] = property_dict.pop("FRAGMENTATION_METHOD")
         if property_dict["PRECURSOR_TYPE"] in ["[M+H]+", "[M-H]-"]:
+            return cls(
+                peaks=peaks, precursor=property_dict["PRECURSOR_TYPE"], **property_dict
+            )
+        else:
+            print("Unspoorted Precursor: {}".format(property_dict["PRECURSOR_TYPE"]))
+            return None
+
+    @classmethod
+    def from_MSG_MGF(cls, mgf_block: str):
+        property_dict = {}
+        info_lines, peak_lines = [], []
+        peak_pattern = re.compile(r"^[\d]+")
+        info_pattern = re.compile(r"([\w\W_]+)=([\[\]\w\W=_#\-]+)")
+        for line in mgf_block.split("\n"):
+            if re.match(peak_pattern, line) is not None:
+                peak_lines.append(line)
+            else:
+                info_lines.append(line)
+        peaks = [
+            cls.resolve_mgf_peak_line(i, peak_line)
+            for (i, peak_line) in enumerate(peak_lines)
+        ]
+
+        lines = mgf_block.split("\n")
+        for line in lines:
+            res = line.strip().split("=", maxsplit=1)
+            if len(res) < 2:
+                continue
+            property_dict[res[0]] = res[1]
+        property_dict["BLOCK"] = mgf_block
+        property_dict["PRECURSOR_TYPE"] = property_dict.pop("ADDUCT")
+        property_dict["COLLISION_ENERGY"] = property_dict.pop("COLLISION_ENERGY").strip(
+            "[]"
+        )
+
+        if property_dict["COLLISION_ENERGY"] == "nan":
+            return None
+        if "INSTRUMENT_TYPE" not in property_dict:
+            return None
+        property_dict["INSTRUMENT_TYPE"] = property_dict.pop("INSTRUMENT_TYPE")
+        if property_dict["PRECURSOR_TYPE"] in ["[M+H]+", "[M+Na]+"]:
             return cls(
                 peaks=peaks, precursor=property_dict["PRECURSOR_TYPE"], **property_dict
             )

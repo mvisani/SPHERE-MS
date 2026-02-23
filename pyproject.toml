@@ -3,15 +3,11 @@ name = "sphere-ms"
 version = "0.1.0"
 description = "Add your description here"
 readme = "README.md"
-requires-python = ">=3.13"
+requires-python = ">=3.11"
 dependencies = [
     "lightning>=2.6.1",
-    "matplotlib>=3.10.8",
-    "numba>=0.64.0",
-    "pandarallel>=1.6.5",
-    "pandas>=3.0.1",
-    "rdkit>=2025.9.5",
-    "scipy>=1.17.1",
-    "torch>=2.10.0",
-    "torch-geometric>=2.7.0",
+    "massspecgym",
 ]
+
+[tool.uv.sources]
+massspecgym = { git = "https://github.com/pluskal-lab/MassSpecGym" }

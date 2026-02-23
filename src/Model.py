@@ -1,12 +1,13 @@
-import torch
 import lightning as L
+import torch
 from torch import optim
-from .encoding import SpectrumDataBatch, MSMolDataBatch
-from .modules import FeatureGNN
-from .utils import peaks2ndarray
-from .similarity import cosine_hungarian_similarity
 from torchmetrics import Metric
 from torchmetrics.utilities import dim_zero_cat
+
+from .encoding import MSMolDataBatch, SpectrumDataBatch
+from .modules import FeatureGNN
+from .similarity import cosine_hungarian_similarity
+from .utils import peaks2ndarray
 
 
 class SimilarityMetric(Metric):

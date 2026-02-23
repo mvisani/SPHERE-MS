@@ -1,20 +1,23 @@
-import os, torch, uuid
-from torch.utils.data import random_split
-from multiprocessing.pool import Pool
-from torch_geometric.data import Data, Batch, Dataset
-from torch_geometric.data.collate import collate
-from torch.utils.data import DataLoader
-import lightning as L
-from scipy.linalg import eigh
-from torch_geometric.utils import get_laplacian, to_scipy_sparse_matrix, is_sparse
-import numpy as np
-import networkx as nx
-from .MS_chem import MSMol, MSSpectrum, Formula
-from .definition import *
-from .utils import NIST_spectrum_iterator, peaks2ndarray
-from typing import *
-from typing_extensions import Self
+import os
+import uuid
 from functools import partial
+from multiprocessing.pool import Pool
+from typing import *
+
+import lightning as L
+import networkx as nx
+import numpy as np
+import torch
+from scipy.linalg import eigh
+from torch.utils.data import DataLoader, random_split
+from torch_geometric.data import Batch, Data, Dataset
+from torch_geometric.data.collate import collate
+from torch_geometric.utils import get_laplacian, is_sparse, to_scipy_sparse_matrix
+from typing_extensions import Self
+
+from .definition import *
+from .MS_chem import Formula, MSMol, MSSpectrum
+from .utils import MSnLIB_spectrum_iterator, peaks2ndarray
 
 
 def graph2array(mol_graph: nx.Graph):
@@ -98,7 +101,7 @@ def spectrum_covariates_encoding(spectrum: MSSpectrum) -> np.ndarray:
     nce = spectrum.get_nce()
     return np.array(
         [*instrument_onehot, *precursor_onehot, nce], dtype=np.float32
-    ).reshape([1, 6])
+    ).reshape([1, 5])
 
 
 class SpectrumData(Data):
@@ -150,7 +153,10 @@ def spectrum2data(
     Returns:
         Data: _description_
     """
-    msmol = MSMol(spectrum.get_mol(), spectrum.precursor)
+    mol = spectrum.get_mol()
+    if mol is None:
+        return None
+    msmol = MSMol(mol, spectrum.precursor)
     node_h, bond_h, edge_index = graph2array(msmol.mol_graph)
     fragments = msmol.get_fragments_from_single_cut(include_ring_cuts=include_ring_cuts)
     frag_node_index = [fragment.ion_nodes for fragment in fragments]
@@ -384,6 +390,7 @@ class NISTDataModule(L.LightningDataModule):
     def __init__(
         self,
         nist_dir: str = "path/to/dir",
+        nist_file: str = "path/to/dir",
         train_val_test_split=None,
         train_inchikeys: list[str] = None,
         valid_inchikeys: list[str] = None,
@@ -407,6 +414,10 @@ class NISTDataModule(L.LightningDataModule):
         self.valid_inchikeys = valid_inchikeys
         self.test_inchikeys = test_inchikeys
 
+        self.prepare_data(
+            nist_file=nist_file, loss_formulas=[Formula(i) for i in LOSS_FORMULAS]
+        )
+
     def setup(self, stage):
         if stage == "fit":
             self.train_set = NISTDataset(
@@ -421,7 +432,9 @@ class NISTDataModule(L.LightningDataModule):
             )
 
     def prepare_fn(self, spectrum_block: str, loss_formulas):
-        spectrum = MSSpectrum.from_NIST_MSP(spectrum_block)
+        spectrum = MSSpectrum.from_MSG_MGF(spectrum_block)
+        if spectrum is None:
+            return
         inchi_key = spectrum.INCHIKEY
         spectrum_dir = os.path.join(self.nist_dir, inchi_key)
         data = spectrum2data(spectrum, loss_formulas=loss_formulas)
@@ -439,9 +452,7 @@ class NISTDataModule(L.LightningDataModule):
         else:
             work_fn = partial(self.prepare_fn, loss_formulas=loss_formulas)
             with Pool() as pool:
-                results = pool.imap(
-                    work_fn, NIST_spectrum_iterator(nist_file=nist_file)
-                )
+                results = pool.imap(work_fn, MSnLIB_spectrum_iterator(nist_file))
                 for r in results:
                     pass
 
@@ -595,7 +606,7 @@ class MSMolDataBatch(Batch):
             nce = covariates_d["NCE"]
             covariates = np.array(
                 [*instrument_onehot, *precursor_onehot, nce], dtype=np.float32
-            ).reshape([1, 6])
+            ).reshape([1, 5])
 
             node_h = np.zeros(shape=(num_nodes + 1, *n.shape[1:]), dtype=np.float32)
             node_h[1:, :] = n

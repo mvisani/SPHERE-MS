@@ -1,5 +1,7 @@
+import json
+import os
+
 import rdkit.Chem as Chem
-import os, json
 
 ROOT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 P_TBL = Chem.GetPeriodicTable()
@@ -18,8 +20,8 @@ ELEMENTS_ONEHOT = ["C", "N", "O", "P", "S", "F", "Cl", "Br", "I"]
 HYBRIDIZATION = ["SP", "SP2", "SP3", "SP3D", "SP3D2"]
 HYBRIDIZATION_ONEHOT = ["SP", "SP2", "SP3", "SP3D", "SP3D2", "OTHERS"]
 BOND_ONEHOT = ["SINGLE", "DOUBLE", "TRIPLE", "AROMATIC"]
-INSTRUMENT_TYPES = ["HCD", "Q-TOF", "IT-FT/ion trap with FTMS"]
-PRECURSOR_TYPES = ["[M+H]+", "[M-H]-"]
+INSTRUMENT_TYPES = ["Orbitrap", "QTOF"]
+PRECURSOR_TYPES = ["[M+H]+", "[M+Na]+"]
 
 NIST_MSP_KEYWORDS = [
     "PRECURSOR_TYPE",
@@ -35,6 +37,21 @@ MSNLIB_MGF_KEYWORDS = [
     "FRAGMENTATION_METHOD",
     "SPECTYPE",
     "COLLISION_ENERGY",
+]
+
+MSG_KEYWORDS = [
+    "IDENTIFIER",
+    "SMILES",
+    "INCHIKEY",
+    "FORMULA",
+    "PRECURSOR_FORMULA",
+    "PARENT_MASS",
+    "PRECURSOR_MZ",
+    "ADDUCT",
+    "INSTRUMENT_TYPE",
+    "COLLISION_ENERGY",
+    "FOLD",
+    "SIMULATION_CHALLENGE",
 ]
 
 # NIST save molecule structures in inchi_key
