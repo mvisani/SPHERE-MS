@@ -6,6 +6,7 @@ import lightning as L
 import pandas as pd
 from lightning.pytorch.callbacks import ModelCheckpoint, ModelSummary
 from lightning.pytorch.callbacks.early_stopping import EarlyStopping
+from lightning.pytorch.loggers import WandbLogger
 
 from src.definition import LOSS_FORMULAS
 from src.encoding import NISTDataModule
@@ -56,7 +57,7 @@ if __name__ == "__main__":
         mode="max",
         every_n_epochs=10,
         dirpath=os.path.join(args.save_dir, "model_ckpt"),
-        filename="NIST_{epoch:02d}_{median_similarity:.3f}",
+        filename="{epoch:02d}_{median_similarity:.3f}",
     )
     msmodel = MSModel(
         node_input_dim=args.node_input_dim,
@@ -72,6 +73,7 @@ if __name__ == "__main__":
         bottleneck=args.bottleneck,
         dropout=args.dropout,
     )
+    wandb_logger = WandbLogger(log_model="all")
     trainer = L.Trainer(
         fast_dev_run=False,  # for debugging
         accelerator="auto",
@@ -87,6 +89,7 @@ if __name__ == "__main__":
             early_stop_callback,
             checkpoint_callback,
         ],
+        logger=wandb_logger,
     )
     df = pd.read_csv(
         "hf://datasets/roman-bushuiev/MassSpecGym/data/MassSpecGym.tsv", sep="\t"
