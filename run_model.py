@@ -98,7 +98,7 @@ if __name__ == "__main__":
     msmodel = MSModel.load_from_checkpoint(
         checkpoint_path=args.ckpt,
         hparams_file=args.hyper,
-        weights_only=True,
+        weights_only=False,
         map_location="cpu",
     )
     dataset = InferenceMolDataset(df)
