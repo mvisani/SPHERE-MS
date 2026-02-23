@@ -29,7 +29,7 @@ if __name__ == "__main__":
     # model hyperparameters
     parser.add_argument("--node_input_dim", type=int, default=17)
     parser.add_argument("--edge_input_dim", type=int, default=5)
-    parser.add_argument("--covariates_input_dim", type=int, default=6)
+    parser.add_argument("--covariates_input_dim", type=int, default=5)
     parser.add_argument("--hidden_dim", type=int, default=300)
     parser.add_argument("--num_eigs", type=int, default=8)
     parser.add_argument("--eig_dim", type=int, default=32)
