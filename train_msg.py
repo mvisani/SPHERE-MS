@@ -14,6 +14,7 @@ from src.Model import MSModel
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--nist_dir", type=str)
+    parser.add_argument("--nist_file", type=str)
     parser.add_argument("--train_val_test", type=str)
     parser.add_argument(
         "--save_dir", type=str, default=os.path.join(os.getcwd(), "train_save")
@@ -96,7 +97,7 @@ if __name__ == "__main__":
     test_inchikeys = df[df.fold == "test"]["inchikey"].to_list()
     datamodule = NISTDataModule(
         args.nist_dir,
-        nist_file=str(Path(args.nist_dir) / "MassSpecGym.mgf"),
+        nist_file=args.nist_file,
         train_inchikeys=train_inchikeys,
         valid_inchikeys=validation_inchikeys,
         test_inchikeys=test_inchikeys,
