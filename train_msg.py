@@ -40,7 +40,12 @@ if __name__ == "__main__":
     parser.add_argument("--bottleneck", type=int, default=1)
     parser.add_argument("--dropout", type=float, default=0.1)
     parser.add_argument("--use_norm", type=str, default=None)
-    parser.add_argument("--skip_preparation", type=bool, default=True)
+    parser.add_argument(
+        "--prepare_data",
+        action="store_false",
+        dest="skip_preparation",
+    )
+    parser.set_defaults(skip_preparation=True)
     args = parser.parse_args()
 
     L.seed_everything(seed=args.seed)
@@ -94,10 +99,9 @@ if __name__ == "__main__":
     df = pd.read_csv(
         "hf://datasets/roman-bushuiev/MassSpecGym/data/MassSpecGym.tsv", sep="\t"
     )
-
-    train_inchikeys = df[df.fold == "train"]["inchikey"].to_list()
-    validation_inchikeys = df[df.fold == "val"]["inchikey"].to_list()
-    test_inchikeys = df[df.fold == "test"]["inchikey"].to_list()
+    train_inchikeys = df[df.fold == "train"]["inchikey"].drop_duplicates().to_list()
+    validation_inchikeys = df[df.fold == "val"]["inchikey"].drop_duplicates().to_list()
+    test_inchikeys = df[df.fold == "test"]["inchikey"].drop_duplicates().to_list()
     datamodule = NISTDataModule(
         args.nist_dir,
         nist_file=args.nist_file,
