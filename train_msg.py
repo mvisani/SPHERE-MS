@@ -8,7 +8,7 @@ from lightning.pytorch.callbacks import ModelCheckpoint, ModelSummary
 from lightning.pytorch.callbacks.early_stopping import EarlyStopping
 from lightning.pytorch.loggers import WandbLogger
 
-from src.definition import LOSS_FORMULAS
+from src.definition import INSTRUMENT_TYPES, LOSS_FORMULAS, PRECURSOR_TYPES
 from src.encoding import NISTDataModule
 from src.Model import MSModel
 
@@ -31,8 +31,7 @@ if __name__ == "__main__":
     # model hyperparameters
     parser.add_argument("--node_input_dim", type=int, default=17)
     parser.add_argument("--edge_input_dim", type=int, default=5)
-    parser.add_argument("--covariates_input_dim", type=int, default=5)
-    parser.add_argument("--hidden_dim", type=int, default=300)
+    parser.add_argument("--hidden_dim", type=int, default=512)
     parser.add_argument("--num_eigs", type=int, default=8)
     parser.add_argument("--eig_dim", type=int, default=32)
     parser.add_argument("--eig_depth", type=int, default=2)
@@ -67,7 +66,7 @@ if __name__ == "__main__":
     msmodel = MSModel(
         node_input_dim=args.node_input_dim,
         edge_input_dim=args.edge_input_dim,
-        covariates_input_dim=args.covariates_input_dim,
+        covariates_input_dim=len(INSTRUMENT_TYPES) + len(PRECURSOR_TYPES) + 1,
         eigen_dim=args.eig_dim,
         hidden_dim=args.hidden_dim,
         num_eigs=args.num_eigs,
@@ -88,7 +87,7 @@ if __name__ == "__main__":
         max_epochs=args.max_epochs,
         gradient_clip_val=args.grad_clipping,
         default_root_dir=args.save_dir,
-        check_val_every_n_epoch=10,
+        check_val_every_n_epoch=5,
         callbacks=[
             ModelSummary(max_depth=1),
             early_stop_callback,
