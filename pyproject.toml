@@ -7,7 +7,13 @@ requires-python = ">=3.11"
 dependencies = [
     "lightning>=2.6.1",
     "massspecgym",
+    "pandarallel>=1.6.5",
 ]
 
 [tool.uv.sources]
 massspecgym = { git = "https://github.com/pluskal-lab/MassSpecGym" }
+
+[dependency-groups]
+dev = [
+    "ipython>=9.10.0",
+]

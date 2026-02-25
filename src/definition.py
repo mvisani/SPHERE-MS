@@ -2,6 +2,7 @@ import json
 import os
 
 import rdkit.Chem as Chem
+from rdkit.Chem import Descriptors
 
 ROOT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 P_TBL = Chem.GetPeriodicTable()
@@ -206,3 +207,59 @@ LOSS_FORMULAS = [
     "HI",
     "I2",
 ]
+
+
+h_minus = Chem.MolFromSmiles("[H-]")  # hydrid
+h_plus = Chem.MolFromSmiles("[H+]")  # h proton
+h_2 = Chem.MolFromSmiles("[HH]")  # h2
+
+ADDUCT_WEIGHTS = {
+    "[M+H]+": Descriptors.ExactMolWt(h_plus),  # 1.007276,
+    "[M+H]-": Descriptors.ExactMolWt(h_plus),  # TODO might not technically exist
+    "[M+NH4]+": 18.033823,
+    "[M+Na]+": 22.989218,
+    "[M-H]-": -1 * Descriptors.ExactMolWt(h_plus),
+    #
+    # positvie fragment rearrangements
+    #
+    "[M-H]+": -1
+    * Descriptors.ExactMolWt(h_minus),  # Double bond replacing 2 hydrogen atoms + H
+    "[M]+": 0,
+    "[M-2H]+": -1 * Descriptors.ExactMolWt(h_2),  # Loosing proton and hydrid
+    "[M-3H]+": -1 * Descriptors.ExactMolWt(h_2)
+    - 1 * Descriptors.ExactMolWt(h_minus),  # 2 Double bonds  + H
+    # experimental cases
+    # "[M-4H]+": -1.007276 * 4,
+    # "[M-5H]+": -1.007276 * 5,
+    #
+    # negative fragment rearrangements
+    #
+    # "[M-H]-": -1*Chem.Descriptors.ExactMolWt(h_plus), # see above
+    "[M]-": 0,  # could be one electron too many
+    "[M-2H]-": -1 * Descriptors.ExactMolWt(h_2),
+    "[M-3H]-": -1 * Descriptors.ExactMolWt(h_2)
+    - 1 * Chem.Descriptors.ExactMolWt(h_plus),
+    #
+    # Hydrogen gains
+    #
+    "[M+2H]+": Descriptors.ExactMolWt(h_plus)
+    + 1
+    * Descriptors.ExactMolWt(
+        Chem.MolFromSmiles("[H]")
+    ),  # 1 proton + 1 neutral hydrogens
+    "[M+3H]+": Descriptors.ExactMolWt(h_plus)
+    + 2
+    * Descriptors.ExactMolWt(
+        Chem.MolFromSmiles("[H]")
+    ),  # 1 proton + 2 neutral hydrogens
+    "[M+2H]-": Descriptors.ExactMolWt(h_plus)
+    + 1
+    * Descriptors.ExactMolWt(
+        Chem.MolFromSmiles("[H]")
+    ),  # 1 proton + 2 neutral hydrogens
+    "[M+3H]-": Descriptors.ExactMolWt(h_plus)
+    + 2
+    * Descriptors.ExactMolWt(
+        Chem.MolFromSmiles("[H]")
+    ),  # 1 proton + 2 neutral hydrogens
+}

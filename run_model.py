@@ -6,6 +6,7 @@ from multiprocessing import Manager
 import pandas as pd
 import rdkit.Chem as Chem
 import torch
+from matchms.exporting import save_as_msp
 from pandarallel import pandarallel
 from torch.utils.data import DataLoader
 from torch.utils.data import Dataset as TorchDataset
@@ -14,7 +15,7 @@ from src.definition import LOSS_FORMULAS
 from src.encoding import MSMolDataBatch
 from src.Model import MSModel
 from src.MS_chem import Formula, MSMol
-from src.utils import mspblock_from_peaks
+from src.utils import matchms_spectrum_from_peaks
 
 logger = logging.getLogger()
 loss_formulas = [Formula(L) for L in LOSS_FORMULAS]
@@ -111,14 +112,16 @@ if __name__ == "__main__":
     )
 
     # 3. run model
+    spectra = []
     msmodel.eval()
     with torch.no_grad():
-        with open(args.out_msp, "w") as msp_out:
-            for metadata, msmol_batch in dataloader:
-                msmol_batch = msmol_batch.to(msmodel.device)
-                pred_peaks = msmodel.predict_step(msmol_batch)
-                for pred_p, meta_d in zip(pred_peaks, metadata):
-                    block = mspblock_from_peaks(pred_p, **meta_d)
-                    msp_out.write(block)
+        for metadata, msmol_batch in dataloader:
+            msmol_batch = msmol_batch.to(msmodel.device)
+            pred_peaks = msmodel.predict_step(msmol_batch)
+            for pred_p, meta_d in zip(pred_peaks, metadata):
+                s = matchms_spectrum_from_peaks(pred_p, **meta_d)
+                spectra.append(s)
+
+    save_as_msp(spectra, args.out_msp, mode="w")
     end_time = time.time()
     print("Elapsed time: {:.1f}".format((end_time - start_time) / 60))

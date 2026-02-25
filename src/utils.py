@@ -1,9 +1,15 @@
-import torch
-import numpy as np
 from collections import defaultdict
+from curses import meta
+
 import matplotlib.pyplot as plt
-from .MS_chem import Peak, Formula
-from .definition import *
+import numpy as np
+import torch
+from matchms import Spectrum
+from matchms.filtering import default_filters, normalize_intensities
+from rdkit import Chem
+
+from .definition import ADDUCT_WEIGHTS, ELECTRON_MASS
+from .MS_chem import Formula, Peak
 
 
 def NIST_spectrum_iterator(nist_file):
@@ -123,6 +129,27 @@ def peaks2ndarray(peaks: list[Peak]) -> np.ndarray:
     mzs = [peak.mz for peak in peaks]
     intensity = [peak.intensity / intensity_norm for peak in peaks]
     return np.vstack([mzs, intensity], dtype=np.float32).transpose()
+
+
+def matchms_spectrum_from_peaks(peaks: list[Peak], **metadata) -> Spectrum:
+    metadata = {k: v for k, v in metadata.items()}
+    metadata["precursor_mz"] = derive_precursor_mz(metadata)
+    peaks = sorted(peaks, key=lambda peak: peak.mz)
+    mzs = np.array([peak.mz for peak in peaks])
+    intensities = np.array([peak.intensity for peak in peaks])
+    if isinstance(metadata["Name"], int):
+        metadata["Name"] = str(metadata["Name"])
+    spectrum = Spectrum(mz=mzs, intensities=intensities, metadata=metadata)
+    return normalize_intensities(default_filters(spectrum))
+
+
+def derive_precursor_mz(metadata: dict) -> float:
+    smiles = metadata["SMILES"]
+    adduct = metadata["Precursor_type"]
+    adduct_weight = ADDUCT_WEIGHTS[adduct]
+    mol = Chem.MolFromSmiles(smiles)
+    exact_mass = Chem.Descriptors.ExactMolWt(mol)
+    return exact_mass + adduct_weight
 
 
 def mspblock_from_peaks(peaks: list[Peak], **metadata):
