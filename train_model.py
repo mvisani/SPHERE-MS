@@ -52,7 +52,7 @@ if __name__ == "__main__":
         mode="max",
         every_n_epochs=10,
         dirpath=os.path.join(args.save_dir, "model_ckpt"),
-        filename="NIST_{epoch:02d}_{median_similarity:.3f}",
+        filename="{epoch:02d}_{median_similarity:.3f}",
     )
     msmodel = MSModel(
         node_input_dim=args.node_input_dim,
