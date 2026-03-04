@@ -1,11 +1,13 @@
+from typing import Optional
+
 import torch
-from torch_geometric.nn import GraphNorm, AttentionalAggregation
+import torch.nn as nn
+from torch_geometric.nn import AttentionalAggregation, GraphNorm
 from torch_geometric.nn.conv import GINEConv
 from torch_geometric.utils import softmax
-import torch.nn as nn
-from typing import *
+
+from .encoding import MSMolDataBatch, SpectrumDataBatch
 from .MS_chem import Peak
-from .encoding import SpectrumDataBatch, MSMolDataBatch
 from .utils import pred2peaks
 
 

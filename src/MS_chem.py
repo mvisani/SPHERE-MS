@@ -2,14 +2,27 @@ import copy
 import itertools
 import re
 from collections import defaultdict, namedtuple
-from typing import *
 
 import networkx as nx
 import numpy as np
 import rdkit.Chem as Chem
 from rdkit.Chem.rdMolDescriptors import CalcMolFormula
 
-from .definition import *
+from .definition import (
+    BR81_MASS,
+    BR81_PER,
+    CL37_MASS,
+    CL37_PER,
+    ELECTRON_MASS,
+    ELEMENTS,
+    ELEMENTS_ISO,
+    HYBRIDIZATION,
+    INCHIKEY_TABLE,
+    LOSS_FORMULAS,
+    MONO_MASSES,
+    MSNLIB_MGF_KEYWORDS,
+    NIST_MSP_KEYWORDS,
+)
 
 Fragment = namedtuple(
     "Fragment", ["ion_nodes", "loss_nodes", "frag_formula", "ion_charge"]
@@ -824,7 +837,6 @@ class MSSpectrum:
         property_dict = {}
         info_lines, peak_lines = [], []
         peak_pattern = re.compile(r"^[\d]+")
-        info_pattern = re.compile(r"([\w\W_]+)=([\[\]\w\W=_#\-]+)")
         for line in mgf_block.split("\n"):
             if re.match(peak_pattern, line) is not None:
                 peak_lines.append(line)

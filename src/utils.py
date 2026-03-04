@@ -1,5 +1,4 @@
 from collections import defaultdict
-from curses import meta
 
 import matplotlib.pyplot as plt
 import numpy as np

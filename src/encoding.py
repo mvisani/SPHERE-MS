@@ -1,8 +1,9 @@
+import json
 import os
 import uuid
 from functools import partial
 from multiprocessing.pool import Pool
-from typing import *
+from typing import Any, List, Optional, Set, Tuple, Union
 
 import lightning as L
 import networkx as nx
@@ -15,7 +16,14 @@ from torch_geometric.data.collate import collate
 from torch_geometric.utils import get_laplacian, is_sparse, to_scipy_sparse_matrix
 from typing_extensions import Self
 
-from .definition import *
+from .definition import (
+    BOND_ONEHOT,
+    ELEMENTS_ONEHOT,
+    HYBRIDIZATION_ONEHOT,
+    INSTRUMENT_TYPES,
+    LOSS_FORMULAS,
+    PRECURSOR_TYPES,
+)
 from .MS_chem import Formula, MSMol, MSSpectrum
 from .utils import MSnLIB_spectrum_iterator, peaks2ndarray
 
